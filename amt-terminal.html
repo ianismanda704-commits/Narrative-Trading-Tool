@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMT Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#0a0b0d;
+  --bg1:#0f1114;
+  --bg2:#141619;
+  --bg3:#1a1d21;
+  --bg4:#22262c;
+  --border:#2a2e35;
+  --border2:#363c45;
+  --text0:#e8eaed;
+  --text1:#b0b8c4;
+  --text2:#6e7a8a;
+  --text3:#3d4550;
+  --accent:#00d4aa;
+  --accent2:#00a882;
+  --red:#ff4757;
+  --amber:#ffb020;
+  --blue:#4a9eff;
+  --purple:#9b6dff;
+  --green:#00d4aa;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Space Grotesk',sans-serif;
+}
+html,body{height:100%;background:var(--bg0);color:var(--text0);font-family:var(--sans);font-size:14px;line-height:1.5;overflow-x:hidden}
+.app{display:grid;grid-template-rows:auto auto 1fr;min-height:100vh}
+
+/* HEADER */
+.header{background:var(--bg1);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:14px}
+.logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);letter-spacing:0.08em}
+.logo span{color:var(--text2)}
+.session-badge{font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);padding:2px 10px;border-radius:4px}
+.regime-chip{font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 12px;border-radius:4px;letter-spacing:0.06em;transition:all 0.3s}
+.regime-chip.balanced{background:rgba(74,158,255,0.15);color:var(--blue);border:1px solid rgba(74,158,255,0.3)}
+.regime-chip.imbalance-up{background:rgba(0,212,170,0.15);color:var(--green);border:1px solid rgba(0,212,170,0.3)}
+.regime-chip.imbalance-down{background:rgba(255,71,87,0.15);color:var(--red);border:1px solid rgba(255,71,87,0.3)}
+.regime-chip.rejection{background:rgba(255,176,32,0.15);color:var(--amber);border:1px solid rgba(255,176,32,0.3)}
+.regime-chip.none{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg1);position:sticky;top:54px;z-index:99;overflow-x:auto}
+.tab{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text2);padding:11px 20px;cursor:pointer;border:none;background:none;letter-spacing:0.05em;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;flex-shrink:0}
+.tab:hover{color:var(--text0)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-num{font-size:10px;opacity:0.55;margin-left:5px}
+
+/* MAIN */
+.main{max-width:1100px;margin:0 auto;width:100%;padding:0}
+.panel{display:none;padding:24px;animation:fadeIn 0.2s ease}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:18px;margin-bottom:14px}
+.card-title{font-family:var(--mono);font-size:11px;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;gap:8px;letter-spacing:0.04em}
+.card-title::before{content:'';display:inline-block;width:3px;height:13px;background:var(--accent);border-radius:2px;flex-shrink:0}
+.section-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px}
+
+/* INPUTS */
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.input-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:600px){.input-grid,.input-grid-3{grid-template-columns:1fr 1fr}}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:0.05em}
+.field input[type=number],.field input[type=text],.field input[type=password]{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:8px 11px;color:var(--text0);font-family:var(--mono);font-size:13px;outline:none;transition:border-color 0.2s;width:100%}
+.field input:focus{border-color:var(--accent2)}
+.field input::placeholder{color:var(--text3)}
+.field select{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:8px 11px;color:var(--text0);font-family:var(--mono);font-size:12px;outline:none;cursor:pointer;width:100%;appearance:none;-webkit-appearance:none}
+.field textarea{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:9px 11px;color:var(--text0);font-family:var(--mono);font-size:12px;outline:none;resize:vertical;width:100%;line-height:1.65}
+.field textarea:focus,.field select:focus{border-color:var(--accent2)}
+
+/* BUTTONS */
+.btn{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.06em;padding:9px 22px;border-radius:5px;border:none;cursor:pointer;transition:all 0.2s}
+.btn-primary{background:var(--accent);color:#0a0b0d}
+.btn-primary:hover{background:var(--accent2)}
+.btn-secondary{background:var(--bg4);color:var(--text1);border:1px solid var(--border2)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:6px 14px;font-size:10px}
+.btn-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+
+/* LEVEL ROWS */
+.level-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;padding:10px 0;border-bottom:1px solid var(--border)}
+.level-row:last-child{border-bottom:none}
+.remove-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--text3);cursor:pointer;padding:6px 8px;font-size:12px;transition:all 0.2s;align-self:end}
+.remove-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* NARRATIVE */
+.narrative-box{background:var(--bg0);border:1px solid var(--border2);border-radius:7px;padding:18px;font-family:var(--mono);font-size:13px;line-height:1.8;color:var(--text0);position:relative;overflow:hidden}
+.narrative-box::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.narrative-main{font-size:15px;font-weight:500;color:var(--accent);margin-bottom:10px;line-height:1.5}
+.narrative-detail{font-size:12px;color:var(--text1);line-height:1.9}
+.narrative-detail b{color:var(--text0)}
+
+/* ACTION PLAN */
+.scenario-card{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:16px;margin-bottom:10px;border-left:3px solid var(--text3)}
+.scenario-card.bull{border-left-color:var(--green)}
+.scenario-card.bear{border-left-color:var(--red)}
+.scenario-card.neutral{border-left-color:var(--blue)}
+.scenario-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text0);margin-bottom:8px;letter-spacing:0.04em}
+.scenario-detail{font-family:var(--mono);font-size:11px;color:var(--text1);line-height:1.8}
+.scenario-detail .entry{color:var(--green)}
+.scenario-detail .stop{color:var(--red)}
+.scenario-detail .target{color:var(--blue)}
+
+/* LEVELS TABLE */
+.levels-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
+.levels-table th{text-align:left;color:var(--text3);padding:5px 10px;border-bottom:1px solid var(--border);font-weight:500;letter-spacing:0.06em}
+.levels-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text1);vertical-align:middle}
+.levels-table td.price-col{color:var(--text0);font-weight:500}
+.priority-high{color:var(--amber)}
+.priority-med{color:var(--text1)}
+.priority-low{color:var(--text3)}
+
+/* TAGS */
+.tag{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;letter-spacing:0.05em;display:inline-block}
+.tag-green{background:rgba(0,212,170,0.15);color:var(--green)}
+.tag-red{background:rgba(255,71,87,0.15);color:var(--red)}
+.tag-amber{background:rgba(255,176,32,0.15);color:var(--amber)}
+.tag-blue{background:rgba(74,158,255,0.15);color:var(--blue)}
+.tag-purple{background:rgba(155,109,255,0.15);color:var(--purple)}
+.tag-gray{background:rgba(110,122,138,0.15);color:var(--text2)}
+
+/* UPDATE FEED */
+.update-feed{display:flex;flex-direction:column}
+.update-entry{padding:11px 14px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:60px 1fr;gap:14px;align-items:start}
+.update-time{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px}
+.update-content{font-family:var(--mono);font-size:11px;color:var(--text1);line-height:1.7}
+.update-content .level-hit{color:var(--accent);font-weight:500}
+.update-content b{color:var(--text0)}
+.scrollable{max-height:360px;overflow-y:auto}
+
+/* CHAT */
+.chat-key-gate{padding:40px 24px;text-align:center;border:1px dashed var(--border2);border-radius:8px;max-width:560px;margin:0 auto}
+.chat-key-gate h3{font-family:var(--mono);font-size:13px;color:var(--text1);margin-bottom:8px;letter-spacing:0.06em}
+.chat-key-gate p{font-family:var(--mono);font-size:11px;color:var(--text2);margin-bottom:18px;line-height:1.8}
+.key-input-row{display:flex;gap:8px;margin:0 auto}
+.key-input-row input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:9px 13px;color:var(--text0);font-family:var(--mono);font-size:12px;outline:none}
+.key-input-row input:focus{border-color:var(--accent)}
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:420px}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{padding:12px 16px;border-radius:7px;font-family:var(--mono);font-size:12px;line-height:1.75;max-width:88%}
+.chat-msg.user{background:var(--bg4);color:var(--text0);align-self:flex-end;border:1px solid var(--border2)}
+.chat-msg.assistant{background:var(--bg2);color:var(--text1);align-self:flex-start;border:1px solid var(--border);border-left:3px solid var(--accent)}
+.chat-msg.thinking{background:var(--bg2);color:var(--text3);align-self:flex-start;border:1px dashed var(--border);font-style:italic}
+.chat-msg .role{font-size:10px;font-weight:600;margin-bottom:5px;letter-spacing:0.06em}
+.chat-msg.user .role{color:var(--blue)}
+.chat-msg.assistant .role{color:var(--accent)}
+.chat-msg.thinking .role{color:var(--text3)}
+.chat-input-area{border-top:1px solid var(--border);padding:14px 16px;display:flex;gap:10px;background:var(--bg1)}
+.chat-input-area textarea{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:9px 13px;color:var(--text0);font-family:var(--mono);font-size:12px;resize:none;outline:none;line-height:1.65;min-height:64px}
+.chat-input-area textarea:focus{border-color:var(--accent2)}
+
+/* MISC */
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.empty-state{text-align:center;padding:40px 24px;color:var(--text3);font-family:var(--mono);font-size:12px;line-height:1.8}
+.empty-state .icon{font-size:28px;margin-bottom:10px;opacity:0.4}
+.bias-box{font-family:var(--mono);font-size:12px;color:var(--text1);line-height:1.9}
+.bias-box b{color:var(--text0)}
+hr.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">AMT<span>/</span>TERMINAL</div>
+    <div class="session-badge" id="sessionDate">—</div>
+  </div>
+  <div class="row">
+    <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">REGIME</span>
+    <div class="regime-chip none" id="regimeChip">UNSET</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('pre')" id="tab-pre">01 PRE-SESSION<span class="tab-num">INPUT</span></button>
+  <button class="tab" onclick="switchTab('plan')" id="tab-plan">02 ACTION PLAN<span class="tab-num">OUTPUT</span></button>
+  <button class="tab" onclick="switchTab('update')" id="tab-update">03 UPDATE<span class="tab-num">NARRATIVE</span></button>
+  <button class="tab" onclick="switchTab('chat')" id="tab-chat">04 LIVE CHAT<span class="tab-num">GROQ AI</span></button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- PANEL 1: PRE-SESSION -->
+<div class="panel active" id="panel-pre">
+
+  <!-- SECTION: Reading the AM Session Profile -->
+  <div class="card">
+    <div class="card-title">Reading the AM Session Profile — four reads at 13:00</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:14px;line-height:1.7">
+      Enter the four values that define the AM profile. These are your primary magnet, accepted value boundaries, session extremes, and directional lean.
+    </div>
+    <div class="input-grid-3">
+      <div class="field">
+        <label>POC — primary magnet &amp; PM reference</label>
+        <input type="number" id="poc" placeholder="e.g. 5412.25" step="0.25">
+      </div>
+      <div class="field">
+        <label>VA High — accepted value upper boundary</label>
+        <input type="number" id="vah" placeholder="e.g. 5418.50" step="0.25">
+      </div>
+      <div class="field">
+        <label>VA Low — accepted value lower boundary</label>
+        <input type="number" id="val" placeholder="e.g. 5405.75" step="0.25">
+      </div>
+      <div class="field">
+        <label>AM High — session extreme, untested = PM magnet</label>
+        <input type="number" id="amHigh" placeholder="e.g. 5422.00" step="0.25">
+      </div>
+      <div class="field">
+        <label>AM Low — session extreme, untested = PM magnet</label>
+        <input type="number" id="amLow" placeholder="e.g. 5401.50" step="0.25">
+      </div>
+      <div class="field">
+        <label>AM Close — directional lean into PM</label>
+        <input type="number" id="amClose" placeholder="e.g. 5408.75" step="0.25">
+      </div>
+    </div>
+    <div id="closeLeanDisplay" style="display:none;margin-top:12px;font-family:var(--mono);font-size:11px;padding:8px 12px;background:var(--bg3);border-radius:4px;border-left:3px solid var(--accent);color:var(--text1)"></div>
+  </div>
+
+  <!-- SECTION: Pre-Session Routine — Three Questions -->
+  <div style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin:4px 0 10px">Pre-Session Routine — Three Questions at 13:00</div>
+
+  <!-- Q1: What regime did the AM session establish? -->
+  <div class="card">
+    <div class="card-title">Q1 — What regime did the AM session establish? → inherited narrative</div>
+
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">Step 1 — Read the AM profile shape</div>
+    <div class="field" style="margin-bottom:14px">
+      <label>VA shape during AM session</label>
+      <select id="profileShape" onchange="checkQ1Conflict()">
+        <option value="">— Select —</option>
+        <option value="narrow-centered">Narrow VA, centered around POC — balanced signal</option>
+        <option value="expanded-one-sided">VA expanded strongly in one direction, closed near extreme — imbalance</option>
+        <option value="stalled-pullback">VA started expanding then stalled and pulled back — rejection</option>
+      </select>
+    </div>
+
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">Step 2 — Confirm with your pre-marked HVN</div>
+    <div class="input-grid" style="margin-bottom:14px">
+      <div class="field">
+        <label>HVN Low Boundary</label>
+        <input type="number" id="hvnLow" placeholder="e.g. 5400.00" step="0.25">
+      </div>
+      <div class="field">
+        <label>HVN High Boundary</label>
+        <input type="number" id="hvnHigh" placeholder="e.g. 5416.00" step="0.25">
+      </div>
+    </div>
+    <div class="field">
+      <label>Price location vs HVN at 13:00</label>
+      <select id="hvnLocation" onchange="checkQ1Conflict()">
+        <option value="">— Select —</option>
+        <option value="inside">Inside the HVN all AM — balanced</option>
+        <option value="outside-holding">Outside the HVN and holding there into 13:00 — imbalance</option>
+        <option value="outside-returned">Outside the HVN but back inside by 13:00 — rejection</option>
+      </select>
+    </div>
+
+    <!-- Q1 conflict / agreement output -->
+    <div id="q1Result" style="display:none;margin-top:12px;font-family:var(--mono);font-size:11px;padding:10px 12px;background:var(--bg3);border-radius:4px;line-height:1.8"></div>
+  </div>
+
+  <!-- Q2: Did AM close inside, above, or below Prior Day VA? -->
+  <div class="card">
+    <div class="card-title">Q2 — Did AM close inside, above, or below the Prior Day Value Area? → confirms or updates bias</div>
+    <div class="input-grid" style="margin-bottom:14px">
+      <div class="field">
+        <label>Prior Day VAH</label>
+        <input type="number" id="pdVah" placeholder="e.g. 5415.00" step="0.25" onchange="checkQ2()">
+      </div>
+      <div class="field">
+        <label>Prior Day VAL</label>
+        <input type="number" id="pdVal" placeholder="e.g. 5398.00" step="0.25" onchange="checkQ2()">
+      </div>
+    </div>
+    <!-- Q2 output -->
+    <div id="q2Result" style="display:none;font-family:var(--mono);font-size:11px;padding:10px 12px;background:var(--bg3);border-radius:4px;line-height:1.8"></div>
+    <!-- Q1 + Q2 combined verdict -->
+    <div id="q1q2Verdict" style="display:none;margin-top:10px;font-family:var(--mono);font-size:11px;padding:10px 12px;border-radius:4px;line-height:1.8"></div>
+  </div>
+
+  <!-- Q3: What levels are still untested or unresolved? -->
+  <div class="card">
+    <div class="card-title">Q3 — What levels are still untested or unresolved from AM? → these are your PM magnets</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:14px;line-height:1.7">
+      Triage every pre-marked Shelf and LVN within PM range. Untested and tested-but-unconfirmed levels are your PM magnets — the prices the market still needs to revisit.
+    </div>
+    <div id="levelRows">
+      <div class="level-row" id="lvl-0">
+        <div class="field"><label>Type</label><select class="lvl-type">
+          <option value="shelf">Shelf</option>
+          <option value="lvn">LVN</option>
+          <option value="hvn">HVN</option>
+        </select></div>
+        <div class="field"><label>Price</label><input type="number" class="lvl-price" placeholder="5420.00" step="0.25"></div>
+        <div class="field"><label>Location</label><select class="lvl-dir">
+          <option value="above">Above</option>
+          <option value="below">Below</option>
+        </select></div>
+        <div class="field"><label>State</label><select class="lvl-state">
+          <option value="untested">Not tested — open magnet, HIGH priority</option>
+          <option value="tested-unconfirmed">Tested, FP did not fire — HIGH priority</option>
+          <option value="tested-confirmed">Tested &amp; confirmed — lower priority</option>
+        </select></div>
+        <div></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-sm" onclick="addLevel()">+ Add Level</button>
+    </div>
+  </div>
+
+  <!-- SECTION: Declaring the Regime -->
+  <div style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin:4px 0 10px">Declaring the Regime at 13:00</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:14px;line-height:1.7">
+    Combine the four reads into a single narrative statement. If you cannot state it clearly in under 30 seconds, the narrative is not ready — no trades until it is.
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="declareRegime()">DECLARE REGIME →</button>
+    <button class="btn btn-secondary" onclick="clearAll()">CLEAR ALL</button>
+  </div>
+
+  <div id="declarationOutput" style="display:none;margin-top:20px">
+    <div class="section-label">Regime Declaration</div>
+    <div class="narrative-box" style="box-shadow:0 0 20px rgba(0,212,170,0.07)">
+      <div class="narrative-main" id="narrativeMain">—</div>
+      <div class="narrative-detail" id="narrativeDetail">—</div>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-primary btn-sm" onclick="switchTab('plan');buildActionPlan()">VIEW ACTION PLAN →</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- PANEL 2: ACTION PLAN -->
+<div class="panel" id="panel-plan">
+  <div id="planEmpty" class="empty-state">
+    <div class="icon">◇</div>
+    Complete Pre-Session input and declare the regime first.<br>
+    The action plan generates automatically from your session data.
+  </div>
+  <div id="planContent" style="display:none">
+    <div class="card">
+      <div class="card-title">Session Narrative</div>
+      <div class="narrative-box" id="planNarrative"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bias & Approach</div>
+      <div class="bias-box" id="planBias"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Key Levels — Priority Order</div>
+      <div style="overflow-x:auto">
+        <table class="levels-table" id="planLevels">
+          <thead><tr><th>TYPE</th><th>PRICE</th><th>STATE</th><th>PRIORITY</th><th>NOTE</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Scenario Map</div>
+      <div id="planScenarios"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 3: UPDATE NARRATIVE -->
+<div class="panel" id="panel-update">
+  <div class="card">
+    <div class="card-title">Post Price Action Update</div>
+    <div class="input-grid">
+      <div class="field">
+        <label>Current Price</label>
+        <input type="number" id="updatePrice" placeholder="e.g. 5415.25" step="0.25">
+      </div>
+      <div class="field">
+        <label>Condition — pick one or type below</label>
+        <select id="updateCondition">
+          <option value="">— Select condition —</option>
+          <option value="pushing through LVN without FP">Pushing through LVN without FP</option>
+          <option value="rejected at LVN — FP fired">Rejected at LVN, FP fired</option>
+          <option value="touched LVN, FP did not fire">Touched LVN, FP did not fire</option>
+          <option value="VA expanding directionally">VA expanding directionally</option>
+          <option value="VA bracketing and rotating">VA bracketing and rotating</option>
+          <option value="VA stalling after early push">VA stalling after early push</option>
+          <option value="approaching AM High">Approaching AM High</option>
+          <option value="approaching AM Low">Approaching AM Low</option>
+          <option value="testing POC">Testing POC</option>
+          <option value="broke above VAH">Broke above VAH</option>
+          <option value="broke below VAL">Broke below VAL</option>
+          <option value="rejected at AM High">Rejected at AM High</option>
+          <option value="rejected at AM Low">Rejected at AM Low</option>
+          <option value="testing Prior Day VAH">Testing Prior Day VAH</option>
+          <option value="testing Prior Day VAL">Testing Prior Day VAL</option>
+          <option value="FP absorption confirmed at Shelf">FP absorption confirmed at Shelf</option>
+          <option value="no acceptance above VAH, returning">No acceptance above VAH, returning</option>
+          <option value="no acceptance below VAL, returning">No acceptance below VAL, returning</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <label>Free text — override or supplement the dropdown</label>
+      <textarea id="updateFreeText" rows="2" placeholder="e.g. Tagged the untested shelf at 5420, immediate reversal, no absorption seen — level remains unconfirmed..."></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="postUpdate()">POST UPDATE →</button>
+      <button class="btn btn-secondary btn-sm" onclick="clearFeed()">CLEAR FEED</button>
+    </div>
+  </div>
+
+  <div id="currentNarrativeCard" style="display:none" class="card">
+    <div class="card-title">Updated Narrative</div>
+    <div class="narrative-box" id="updatedNarrative"></div>
+  </div>
+
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">Session Feed</div>
+    <div class="update-feed scrollable" id="updateFeed">
+      <div class="empty-state" id="feedEmpty" style="padding:20px">No updates posted yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 4: LIVE CHAT -->
+<div class="panel" id="panel-chat">
+
+  <div id="chatGate">
+    <div class="chat-key-gate">
+      <h3>GROQ API KEY REQUIRED</h3>
+      <p>Live session chat uses the Groq inference API.<br>
+      Your key is used in-browser only and never stored anywhere.<br>
+      It clears when you close or refresh the page.</p>
+      <div class="key-input-row">
+        <input type="password" id="groqKeyInput" placeholder="gsk_..." autocomplete="off">
+        <button class="btn btn-primary" onclick="activateChat()">ACTIVATE</button>
+      </div>
+      <p style="margin-top:12px;font-size:10px;color:var(--text3)">Get a free key at console.groq.com</p>
+    </div>
+  </div>
+
+  <div id="chatActive" style="display:none" class="chat-container">
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg assistant">
+        <div class="role">AMT TERMINAL</div>
+        Session loaded. I have full context of your current narrative, regime, and all levels. Ask me anything — setups, level reads, regime transitions, order context.
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <textarea id="chatInput" placeholder="e.g. Price is testing the AM High right now, what's the play?&#10;Shift+Enter for new line · Enter to send" rows="2" onkeydown="handleChatKey(event)"></textarea>
+      <button class="btn btn-primary" onclick="sendChat()">SEND</button>
+    </div>
+  </div>
+
+</div>
+</div><!-- end main -->
+</div><!-- end app -->
+
+<script>
+let groqApiKey = null;
+let sessionData = {};
+let updateHistory = [];
+let chatHistory = [];
+let levelCount = 1;
+
+function init() {
+  const now = new Date();
+  document.getElementById('sessionDate').textContent = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+}
+init();
+
+function switchTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+function addLevel() {
+  const c = levelCount++;
+  const row = document.createElement('div');
+  row.className = 'level-row';
+  row.id = 'lvl-' + c;
+  row.innerHTML = `
+    <div class="field"><label>Type</label><select class="lvl-type">
+      <option value="shelf">Shelf</option><option value="lvn">LVN</option><option value="hvn">HVN</option>
+    </select></div>
+    <div class="field"><label>Price</label><input type="number" class="lvl-price" placeholder="0.00" step="0.25"></div>
+    <div class="field"><label>Location</label><select class="lvl-dir">
+      <option value="above">Above current</option><option value="below">Below current</option>
+    </select></div>
+    <div class="field"><label>State</label><select class="lvl-state">
+      <option value="untested">Untested — open magnet</option>
+      <option value="tested-unconfirmed">Tested, FP did not fire</option>
+      <option value="tested-confirmed">Tested & confirmed</option>
+    </select></div>
+    <button class="remove-btn" onclick="this.closest('.level-row').remove()">✕</button>`;
+  document.getElementById('levelRows').appendChild(row);
+}
+
+function getLevels() {
+  const rows = document.querySelectorAll('.level-row');
+  const out = [];
+  rows.forEach(r => {
+    const priceEl = r.querySelector('.lvl-price');
+    if (!priceEl) return;
+    const price = parseFloat(priceEl.value);
+    if (!isNaN(price) && price > 0) {
+      out.push({
+        type: r.querySelector('.lvl-type').value,
+        price,
+        dir: r.querySelector('.lvl-dir').value,
+        state: r.querySelector('.lvl-state').value
+      });
+    }
+  });
+  return out.sort((a, b) => b.price - a.price);
+}
+
+function getVal(id) { return parseFloat(document.getElementById(id).value) || null; }
+
+function declareRegime() {
+  const d = {
+    poc: getVal('poc'), vah: getVal('vah'), val: getVal('val'),
+    amHigh: getVal('amHigh'), amLow: getVal('amLow'), amClose: getVal('amClose'),
+    hvnLow: getVal('hvnLow'), hvnHigh: getVal('hvnHigh'),
+    pdVah: getVal('pdVah'), pdVal: getVal('pdVal'),
+    profileShape: document.getElementById('profileShape').value,
+    hvnLocation: document.getElementById('hvnLocation').value,
+    levels: getLevels()
+  };
+
+  if (!d.poc || !d.vah || !d.val || !d.amHigh || !d.amLow || !d.amClose) {
+    alert('Fill in all six AM Session Profile values (POC, VAH, VAL, AM High, AM Low, AM Close) before declaring.');
+    return;
+  }
+
+  sessionData = d;
+
+  const regime = computeRegime(d);
+  sessionData.regime = regime;
+  sessionData.closePos = getClosePosition(d);
+  sessionData.pdRel = getPdRelation(d);
+  sessionData.magnets = getMagnets(d.levels);
+
+  const narrative = buildNarrativeLine(d, regime, sessionData.closePos, sessionData.pdRel, sessionData.magnets);
+  sessionData.narrative = narrative;
+
+  updateRegimeChip(regime);
+  document.getElementById('narrativeMain').textContent = narrative.main;
+  document.getElementById('narrativeDetail').innerHTML = narrative.detail;
+  document.getElementById('declarationOutput').style.display = 'block';
+  document.getElementById('declarationOutput').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function computeRegime(d) {
+  const shape = d.profileShape;
+  const hvn = d.hvnLocation;
+  let hvnSignal = '';
+  if (hvn === 'inside') hvnSignal = 'balanced';
+  else if (hvn === 'outside-holding') hvnSignal = 'imbalance';
+  else if (hvn === 'outside-returned') hvnSignal = 'rejection';
+
+  let shapeSignal = '';
+  if (shape === 'narrow-centered') shapeSignal = 'balanced';
+  else if (shape === 'expanded-one-sided') shapeSignal = 'imbalance';
+  else if (shape === 'stalled-pullback') shapeSignal = 'rejection';
+
+  const base = hvnSignal || shapeSignal || guessRegimeByClose(d);
+
+  if (base === 'imbalance') {
+    const range = d.amHigh - d.amLow;
+    const pct = range > 0 ? (d.amClose - d.amLow) / range : 0.5;
+    return pct >= 0.55 ? 'imbalance-up' : 'imbalance-down';
+  }
+  return base;
+}
+
+function guessRegimeByClose(d) {
+  const range = d.amHigh - d.amLow;
+  const pct = range > 0 ? (d.amClose - d.amLow) / range : 0.5;
+  if (pct > 0.65) return 'imbalance';
+  if (pct < 0.35) return 'imbalance';
+  return 'balanced';
+}
+
+function getClosePosition(d) {
+  const range = d.amHigh - d.amLow;
+  const pct = range > 0 ? (d.amClose - d.amLow) / range : 0.5;
+  if (pct >= 0.67) return 'near AM High';
+  if (pct <= 0.33) return 'near AM Low';
+  return 'near POC / mid-range';
+}
+
+function getPdRelation(d) {
+  if (!d.pdVah || !d.pdVal) return 'no prior day data entered';
+  if (d.amClose > d.pdVah) return 'above Prior Day VA';
+  if (d.amClose < d.pdVal) return 'below Prior Day VA';
+  return 'inside Prior Day VA';
+}
+
+function getMagnets(levels) {
+  return levels.filter(l => l.state === 'untested' || l.state === 'tested-unconfirmed');
+}
+
+function buildNarrativeLine(d, regime, closePos, pdRel, magnets) {
+  const labels = {
+    'balanced': 'BALANCED',
+    'imbalance-up': 'IMBALANCE UP',
+    'imbalance-down': 'IMBALANCE DOWN',
+    'rejection': 'REJECTION'
+  };
+  const rLabel = labels[regime] || 'UNKNOWN';
+  const magStr = magnets.length > 0
+    ? magnets.map(m => `${m.type.toUpperCase()} @ ${m.price}`).join(', ')
+    : 'none identified within range';
+
+  const main = `${rLabel} — AM closed ${closePos}, ${pdRel}. PM magnets: ${magStr}`;
+
+  let detail = `<b>Regime:</b> ${rLabel}<br>`;
+  detail += `<b>AM Close:</b> ${closePos}<br>`;
+  detail += `<b>Prior Day VA:</b> ${pdRel}<br>`;
+  detail += `<b>POC:</b> ${d.poc} &nbsp;·&nbsp; <b>VAH:</b> ${d.vah} &nbsp;·&nbsp; <b>VAL:</b> ${d.val}<br>`;
+  detail += `<b>AM Range:</b> ${d.amLow} – ${d.amHigh} &nbsp;·&nbsp; <b>Close:</b> ${d.amClose}<br>`;
+  if (d.hvnLow && d.hvnHigh) detail += `<b>HVN:</b> ${d.hvnLow} – ${d.hvnHigh}<br>`;
+  if (magnets.length > 0) detail += `<b>Open Magnets:</b> ${magStr}`;
+
+  return { main, detail };
+}
+
+function updateRegimeChip(regime) {
+  const chip = document.getElementById('regimeChip');
+  chip.className = 'regime-chip ' + regime;
+  const map = {
+    'balanced': 'BALANCED',
+    'imbalance-up': 'IMBALANCE ↑',
+    'imbalance-down': 'IMBALANCE ↓',
+    'rejection': 'REJECTION'
+  };
+  chip.textContent = map[regime] || 'UNSET';
+}
+
+function buildActionPlan() {
+  if (!sessionData.regime) {
+    document.getElementById('planEmpty').style.display = 'block';
+    document.getElementById('planContent').style.display = 'none';
+    return;
+  }
+  document.getElementById('planEmpty').style.display = 'none';
+  document.getElementById('planContent').style.display = 'block';
+
+  document.getElementById('planNarrative').innerHTML =
+    `<div class="narrative-main">${sessionData.narrative.main}</div>
+     <div class="narrative-detail">${sessionData.narrative.detail}</div>`;
+
+  const biasMap = {
+    'balanced': `<b>Bias:</b> Two-sided, fade the extremes. Expect mean reversion back to POC (${sessionData.poc}) or HVN center.<br>
+<b>Approach:</b> Look for FP absorption at both VAH (${sessionData.vah}) and VAL (${sessionData.val}). Do not chase breakouts without FP confirmation.<br>
+<b>Regime note:</b> Price is building value in place. The market is rotating, not trending. Patience — let price come to you.`,
+    'imbalance-up': `<b>Bias:</b> Long-biased. Value is migrating upward. Do not fade directional moves.<br>
+<b>Approach:</b> Only take LVN FP confirmations with additional structural confluence — absorption in imbalance can be a pause, not a reversal. Shelves above are magnets.<br>
+<b>Key target:</b> AM High ${sessionData.amHigh} is first PM magnet. Extension above if broken cleanly.`,
+    'imbalance-down': `<b>Bias:</b> Short-biased. Value is migrating downward. Do not fade directional moves.<br>
+<b>Approach:</b> Only take LVN FP confirmations with structural confluence. Shelves below are magnets.<br>
+<b>Key target:</b> AM Low ${sessionData.amLow} is first PM magnet. Extension below if broken cleanly.`,
+    'rejection': `<b>Bias:</b> Reversion. The market has explicitly told you it didn't want those prices.<br>
+<b>Approach:</b> LVN signals are highest conviction here. FP absorption at a LVN in rejection regime = the complete AMT trade. Size it accordingly.<br>
+<b>Key read:</b> VA stalled after push and is overlapping. Wait for price to probe the LVN extreme — then let FP fire before entering.`
+  };
+  document.getElementById('planBias').innerHTML = biasMap[sessionData.regime] || '—';
+
+  const tbody = document.querySelector('#planLevels tbody');
+  tbody.innerHTML = '';
+
+  const allLevels = [...(sessionData.levels || [])];
+  if (sessionData.amHigh) allLevels.push({ type: 'AM HIGH', price: sessionData.amHigh, state: 'session extreme', dir: 'above' });
+  if (sessionData.amLow) allLevels.push({ type: 'AM LOW', price: sessionData.amLow, state: 'session extreme', dir: 'below' });
+  if (sessionData.poc) allLevels.push({ type: 'POC', price: sessionData.poc, state: 'anchor', dir: 'mid' });
+  if (sessionData.vah) allLevels.push({ type: 'VAH', price: sessionData.vah, state: 'VA boundary', dir: 'above' });
+  if (sessionData.val) allLevels.push({ type: 'VAL', price: sessionData.val, state: 'VA boundary', dir: 'below' });
+
+  allLevels.sort((a, b) => b.price - a.price).forEach(l => {
+    const isHighPrio = l.state === 'untested' || l.state === 'tested-unconfirmed' || l.state === 'session extreme';
+    const prio = isHighPrio ? 'HIGH' : 'MED';
+    const prioClass = isHighPrio ? 'priority-high' : 'priority-med';
+    const typeClass = l.type === 'shelf' ? 'tag-amber' : l.type === 'lvn' ? 'tag-purple' : l.type === 'hvn' ? 'tag-blue' : 'tag-gray';
+    const note = l.state === 'untested' ? 'Open magnet — not visited PM'
+      : l.state === 'tested-unconfirmed' ? 'Touched, FP did not fire — revisit likely'
+      : l.state === 'session extreme' ? 'Primary PM target if approached'
+      : l.state === 'anchor' ? 'Central magnet in balanced conditions'
+      : 'Reference — market addressed this';
+
+    tbody.innerHTML += `<tr>
+      <td><span class="tag ${typeClass}">${l.type.toUpperCase()}</span></td>
+      <td class="price-col">${l.price}</td>
+      <td>${l.state || '—'}</td>
+      <td class="${prioClass}">${prio}</td>
+      <td style="color:var(--text2);font-size:10px">${note}</td>
+    </tr>`;
+  });
+
+  const sc = document.getElementById('planScenarios');
+  sc.innerHTML = '';
+  buildScenarios(sessionData).forEach(s => {
+    sc.innerHTML += `<div class="scenario-card ${s.dir}">
+      <div class="scenario-title">${s.title}</div>
+      <div class="scenario-detail">${s.body}</div>
+    </div>`;
+  });
+}
+
+function buildScenarios(d) {
+  const r = d.regime;
+  const s = [];
+
+  if (r === 'balanced') {
+    s.push({ dir: 'bull', title: 'SETUP A — Long fade at VAL / lower Shelf', body: `<span class="entry">Entry:</span> FP absorption confirms at VAL ${d.val} or nearest Shelf below. Limit order zone, wait for FP before filling.<br><span class="target">Target 1:</span> POC ${d.poc} &nbsp; <span class="target">Target 2:</span> VAH ${d.vah} if momentum holds.<br><span class="stop">Stop:</span> Below the Shelf or below VAL — sized to session ATR.` });
+    s.push({ dir: 'bear', title: 'SETUP B — Short fade at VAH / upper Shelf', body: `<span class="entry">Entry:</span> FP absorption confirms at VAH ${d.vah} or nearest Shelf above. Limit order zone, wait for FP.<br><span class="target">Target 1:</span> POC ${d.poc} &nbsp; <span class="target">Target 2:</span> VAL ${d.val} extension.<br><span class="stop">Stop:</span> Above the Shelf or above VAH.` });
+    s.push({ dir: 'neutral', title: 'AVOID — Do not chase breakouts in balanced regime', body: `Moves above ${d.amHigh} or below ${d.amLow} without prior FP confirmation are high-probability traps in balanced context. If price extends, wait for retest of the level and FP confirmation before any entry.` });
+  } else if (r === 'imbalance-up') {
+    s.push({ dir: 'bull', title: 'SETUP A — Long on LVN / VAH pullback', body: `<span class="entry">Entry:</span> FP absorption at LVN or VAH ${d.vah} on a pullback. Limit order on retest — do not chase the push.<br><span class="target">Target 1:</span> AM High ${d.amHigh} &nbsp; <span class="target">Target 2:</span> Untested Shelves above.<br><span class="stop">Stop:</span> Below the LVN or below VAH.` });
+    s.push({ dir: 'neutral', title: 'SETUP B — Continuation through AM High', body: `<span class="entry">Entry:</span> If AM High ${d.amHigh} breaks cleanly without FP fade, look for a brief consolidation then add to long position.<br><span class="target">Target:</span> Next Shelf or LVN above. <br><span class="stop">Stop:</span> Back below AM High.` });
+    s.push({ dir: 'bear', title: 'AVOID — Fading imbalance up', body: `Do not take short positions into upside momentum without very high conviction FP + strong structural confluence overhead. The declared regime is your evidence — the market is migrating away from prior value.` });
+  } else if (r === 'imbalance-down') {
+    s.push({ dir: 'bear', title: 'SETUP A — Short on LVN / VAL pullback', body: `<span class="entry">Entry:</span> FP absorption at LVN or VAL ${d.val} on pullback. Limit order on retest.<br><span class="target">Target 1:</span> AM Low ${d.amLow} &nbsp; <span class="target">Target 2:</span> Untested Shelves below.<br><span class="stop">Stop:</span> Above the LVN or above VAL.` });
+    s.push({ dir: 'neutral', title: 'SETUP B — Continuation through AM Low', body: `<span class="entry">Entry:</span> If AM Low ${d.amLow} breaks cleanly, look for consolidation then add to short.<br><span class="target">Target:</span> Next Shelf or LVN below.<br><span class="stop">Stop:</span> Back above AM Low.` });
+    s.push({ dir: 'bull', title: 'AVOID — Buying into imbalance down', body: `Do not go long without FP + structural confluence. The market is migrating away from value to the downside.` });
+  } else if (r === 'rejection') {
+    s.push({ dir: 'bull', title: 'SETUP A — Long at LVN that rejected from below', body: `<span class="entry">Entry:</span> FP absorption confirms at the LVN the market probed and rejected from. This is the complete AMT trade in rejection regime — highest conviction context.<br><span class="target">Target:</span> HVN center / POC ${d.poc}.<br><span class="stop">Stop:</span> Below the LVN.` });
+    s.push({ dir: 'bear', title: 'SETUP B — Short at LVN that rejected from above', body: `<span class="entry">Entry:</span> FP absorption confirms at LVN above. Market probed, found no acceptance, returned inside HVN.<br><span class="target">Target:</span> HVN center / POC ${d.poc}.<br><span class="stop">Stop:</span> Above the LVN.` });
+    s.push({ dir: 'neutral', title: 'KEY PRINCIPLE — Rejection is your highest-conviction session', body: `Both profile shape and HVN relationship confirmed rejection. The market attempted a move, found no acceptance, and returned. FP at LVN here = the cleanest signal AMT produces. Do not pre-empt — wait for the probe and the fire.` });
+  }
+  return s;
+}
+
+function postUpdate() {
+  const price = document.getElementById('updatePrice').value;
+  const condition = document.getElementById('updateCondition').value;
+  const freeText = document.getElementById('updateFreeText').value.trim();
+
+  if (!price && !condition && !freeText) {
+    alert('Enter a price, select a condition, or type a description.');
+    return;
+  }
+
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const entry = { time, price, condition, freeText };
+  updateHistory.push(entry);
+
+  document.getElementById('feedEmpty').style.display = 'none';
+  const feed = document.getElementById('updateFeed');
+  const div = document.createElement('div');
+  div.className = 'update-entry';
+  const pTxt = price ? `<b>@ ${price}</b> — ` : '';
+  const cTxt = condition ? `<span class="level-hit">[${condition}]</span> ` : '';
+  const fTxt = freeText || '';
+  div.innerHTML = `<div class="update-time">${time}</div><div class="update-content">${pTxt}${cTxt}${fTxt}</div>`;
+  feed.insertBefore(div, feed.firstChild);
+
+  const updated = computeUpdatedNarrative(entry);
+  document.getElementById('currentNarrativeCard').style.display = 'block';
+  document.getElementById('updatedNarrative').innerHTML = `<div class="narrative-main" style="font-size:13px">${updated}</div>`;
+
+  document.getElementById('updatePrice').value = '';
+  document.getElementById('updateCondition').value = '';
+  document.getElementById('updateFreeText').value = '';
+}
+
+function computeUpdatedNarrative(entry) {
+  if (!sessionData.regime) return 'No session declared yet — complete the pre-session input first.';
+  const r = sessionData.regime;
+  const c = entry.condition;
+  const base = sessionData.narrative ? sessionData.narrative.main + '<br><br>' : '';
+  let update = base;
+
+  const atPrice = entry.price ? ` @ <b>${entry.price}</b>` : '';
+
+  if (c.includes('pushing through LVN without FP')) {
+    if (r === 'balanced') update += `⚠ <b>REGIME WARNING:</b> LVN broken without FP${atPrice}. Balanced regime may be transitioning to imbalance. Do not fade — wait for VA to confirm whether rotation has stalled or directional expansion is developing.`;
+    else if (r === 'rejection') update += `⚠ <b>REGIME WARNING:</b> LVN sliced without FP${atPrice}. Rejection regime weakening — if price holds outside HVN, narrative shifts toward imbalance. Reassess bias.`;
+    else update += `Imbalance confirmed — LVN pushed through without FP${atPrice}. Trend intact. Maintain imbalance bias, do not fade.`;
+  } else if (c.includes('rejected at LVN')) {
+    const ctx = r === 'rejection' ? '⭐ HIGHEST CONVICTION — full AMT trade. Bias is fully confirmed. Size appropriately.'
+      : r === 'balanced' ? 'Clean fade signal. Target the opposing boundary.'
+      : 'Pause within imbalance. Assess whether trend resumes after absorption or regime is beginning to shift.';
+    update += `FP fired at LVN${atPrice}. ${ctx}`;
+  } else if (c.includes('touched LVN, FP did not fire')) {
+    update += `LVN touched${atPrice}, FP did not fire. Level upgrades to HIGH priority — unconfirmed touch means revisit is likely. Watch for second approach.`;
+  } else if (c.includes('VA expanding directionally')) {
+    update += `VA expanding directionally. ${r === 'balanced' ? '⚠ Balanced regime may be transitioning — do not fade the direction of expansion until VA confirms rotation stalled.' : 'Imbalance developing and deepening. Maintain directional bias.'}`;
+  } else if (c.includes('VA bracketing and rotating')) {
+    update += `VA bracketing and rotating. Balanced conditions holding. Continue fading extremes, POC ${sessionData.poc} is highly magnetic.`;
+  } else if (c.includes('VA stalling after early push')) {
+    update += `VA stalling after push. ${r === 'imbalance-up' || r === 'imbalance-down' ? '⚠ Imbalance regime may be transitioning toward rejection. Watch for HVN reversion.' : 'Rejection pattern developing. Highest-conviction FP setups likely incoming at the extreme.'}`;
+  } else if (c.includes('approaching AM High')) {
+    update += `Price approaching AM High <b>${sessionData.amHigh}</b>. Primary PM magnet. ${r === 'imbalance-up' ? 'Watch for clean break — continuation target above.' : 'Watch for FP fade setup if absorption fires at the high.'}`;
+  } else if (c.includes('approaching AM Low')) {
+    update += `Price approaching AM Low <b>${sessionData.amLow}</b>. Primary PM magnet. ${r === 'imbalance-down' ? 'Watch for clean break — extension target below.' : 'Watch for FP fade setup if absorption fires at the low.'}`;
+  } else if (c.includes('broke above VAH')) {
+    update += `VAH <b>${sessionData.vah}</b> broken${atPrice}. If holding above, regime transitioning toward imbalance up. Bias updates to long-side. Do not fade unless strong FP fires at clear resistance overhead.`;
+  } else if (c.includes('broke below VAL')) {
+    update += `VAL <b>${sessionData.val}</b> broken${atPrice}. Regime transitioning toward imbalance down. Bias updates to short-side.`;
+  } else if (c.includes('rejected at AM High')) {
+    update += `Rejected at AM High <b>${sessionData.amHigh}</b>${atPrice}. ${r === 'balanced' || r === 'rejection' ? 'Expected in this regime. Fade target active — look for FP confirmation and target POC / lower Shelf.' : 'Imbalance stalling — watch if VA begins to overlap.'}`;
+  } else if (c.includes('rejected at AM Low')) {
+    update += `Rejected at AM Low <b>${sessionData.amLow}</b>${atPrice}. ${r === 'balanced' || r === 'rejection' ? 'Expected in this regime. Fade target active — look for FP confirmation and target POC / upper Shelf.' : 'Imbalance stalling — watch if VA begins to overlap.'}`;
+  } else if (c.includes('FP absorption confirmed at Shelf')) {
+    update += `FP absorption confirmed at Shelf${atPrice}. High-conviction signal — Shelf held. ${r === 'balanced' ? 'Target opposing boundary.' : r === 'rejection' ? 'Complete trade signal in current regime.' : 'Assess direction of absorption relative to imbalance bias before entering.'}`;
+  } else if (c.includes('no acceptance above VAH')) {
+    update += `No acceptance above VAH — price returning${atPrice}. Failed breakout. Balanced / rejection lean strengthening. Fade setup incoming if FP fires.`;
+  } else if (c.includes('no acceptance below VAL')) {
+    update += `No acceptance below VAL — price returning${atPrice}. Failed breakdown. Balanced / rejection lean strengthening. Fade setup incoming if FP fires.`;
+  } else {
+    update += entry.freeText || `Update logged${atPrice}.`;
+  }
+
+  return update;
+}
+
+function clearFeed() {
+  updateHistory = [];
+  document.getElementById('updateFeed').innerHTML = '<div class="empty-state" id="feedEmpty" style="padding:20px">No updates posted yet.</div>';
+  document.getElementById('currentNarrativeCard').style.display = 'none';
+}
+
+function clearAll() {
+  sessionData = {}; updateHistory = []; chatHistory = [];
+  document.querySelectorAll('input[type=number], input[type=text], input[type=password]').forEach(i => i.value = '');
+  document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+  document.querySelectorAll('textarea').forEach(t => t.value = '');
+  document.getElementById('declarationOutput').style.display = 'none';
+  document.getElementById('regimeChip').className = 'regime-chip none';
+  document.getElementById('regimeChip').textContent = 'UNSET';
+  const extras = document.querySelectorAll('.level-row:not(#lvl-0)');
+  extras.forEach(r => r.remove());
+  clearFeed();
+}
+
+function activateChat() {
+  const key = document.getElementById('groqKeyInput').value.trim();
+  if (!key || !key.startsWith('gsk_')) {
+    alert('Please enter a valid Groq API key. It should start with gsk_');
+    return;
+  }
+  groqApiKey = key;
+  document.getElementById('chatGate').style.display = 'none';
+  document.getElementById('chatActive').style.display = 'flex';
+}
+
+function getSessionContext() {
+  if (!sessionData.regime) return 'No session declared yet. The trader has not completed pre-session input.';
+  const magnets = (sessionData.magnets || []).map(m => `${m.type} @ ${m.price}`).join(', ') || 'none identified';
+  const lvlList = (sessionData.levels || []).map(l => `${l.type} @ ${l.price} (${l.state})`).join(', ') || 'none entered';
+  const updates = updateHistory.length > 0
+    ? updateHistory.slice(-8).map(u => `[${u.time}]${u.price ? ' @ ' + u.price : ''} ${u.condition || ''} ${u.freeText || ''}`).join('\n')
+    : 'No session updates yet.';
+  return `=== CURRENT SESSION CONTEXT ===
+Declared Regime: ${sessionData.regime}
+Narrative: ${sessionData.narrative?.main || '—'}
+AM Close Position: ${sessionData.closePos || '—'}
+Prior Day Relation: ${sessionData.pdRel || '—'}
+
+KEY LEVELS:
+POC: ${sessionData.poc || '—'}
+VAH: ${sessionData.vah || '—'} | VAL: ${sessionData.val || '—'}
+AM High: ${sessionData.amHigh || '—'} | AM Low: ${sessionData.amLow || '—'} | AM Close: ${sessionData.amClose || '—'}
+HVN: ${sessionData.hvnLow || '—'} – ${sessionData.hvnHigh || '—'}
+Prior Day VAH: ${sessionData.pdVah || '—'} | Prior Day VAL: ${sessionData.pdVal || '—'}
+
+TRIAGED LEVELS: ${lvlList}
+OPEN PM MAGNETS: ${magnets}
+
+SESSION UPDATES (most recent last):
+${updates}
+=== END CONTEXT ===`;
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg || !groqApiKey) return;
+  input.value = '';
+
+  const msgs = document.getElementById('chatMessages');
+
+  const userDiv = document.createElement('div');
+  userDiv.className = 'chat-msg user';
+  userDiv.innerHTML = `<div class="role">YOU</div>${msg.replace(/\n/g, '<br>')}`;
+  msgs.appendChild(userDiv);
+
+  const thinkDiv = document.createElement('div');
+  thinkDiv.className = 'chat-msg thinking';
+  thinkDiv.innerHTML = `<div class="role">AMT TERMINAL</div>Reading session context...`;
+  msgs.appendChild(thinkDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  chatHistory.push({ role: 'user', content: msg });
+
+  const systemPrompt = `You are an expert AMT (Auction Market Theory) futures trading assistant embedded in a live session trading tool. You only discuss futures trading using the AMT framework.
+
+FRAMEWORK RULES:
+- Three regimes: Balanced (fade extremes, target POC), Imbalance Up/Down (trend-following, selective LVN entries only — do not fade), Rejection (highest conviction — FP at LVN = complete trade)
+- PM magnets are untested or unconfirmed (FP did not fire) levels from AM session — these are where price needs to go
+- FP = Footprint absorption — required confirmation before entry in most setups
+- In Imbalance: LVN signals can be pauses not reversals — only take with additional structural confluence
+- In Rejection: FP at LVN = the complete AMT trade. VA stalled after push and overlapping
+- VA expanding directionally = imbalance developing. VA bracketing = balanced. VA stalling after push = watch for rejection
+- Prior day VA: inside = balanced reinforced. Above = imbalance up reinforced. Below = imbalance down reinforced
+- AM close near high → potential continuation or fade at resistance. Near low → inverted. Near POC → neutral
+
+${getSessionContext()}
+
+Answer the trader's question directly and specifically using the exact price levels from the session above. Be concise, decisive, and actionable. Reference the active regime. Do not give generic trading advice. If no session data is declared, tell the trader to complete pre-session input first.`;
+
+  try {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + groqApiKey },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 700,
+        temperature: 0.3,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...chatHistory
+        ]
+      })
+    });
+
+    const data = await resp.json();
+
+    if (data.error) {
+      thinkDiv.className = 'chat-msg assistant';
+      thinkDiv.innerHTML = `<div class="role">ERROR</div>${data.error.message}`;
+      return;
+    }
+
+    const reply = data.choices[0].message.content;
+    chatHistory.push({ role: 'assistant', content: reply });
+
+    thinkDiv.className = 'chat-msg assistant';
+    thinkDiv.innerHTML = `<div class="role">AMT TERMINAL</div>${reply.replace(/\n/g, '<br>')}`;
+
+  } catch (err) {
+    thinkDiv.className = 'chat-msg assistant';
+    thinkDiv.innerHTML = `<div class="role">ERROR</div>Failed to reach Groq API. Check your key and internet connection.<br><small style="color:var(--text3)">${err.message}</small>`;
+  }
+
+  msgs.scrollTop = msgs.scrollHeight;
+}
+</script>
+</body>
+</html>
